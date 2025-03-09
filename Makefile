@@ -28,11 +28,11 @@ start:
 
 ## 关闭相关服务
 stop:
-	docker-compose --profile dev stop
+	docker compose --profile dev stop
 
 ## 关闭并删除
 down:
-	docker-compose --profile dev down
+	docker compose --profile dev down
 
 ## 打包
 build:
