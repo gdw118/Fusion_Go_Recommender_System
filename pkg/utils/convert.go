@@ -42,6 +42,7 @@ func ConvertAPIProfileToUser(src *api.UserProfileInfo) *user.UserProfileInfo {
 		Introduction: src.Introduction,
 		QqNumber:     src.QqNumber,
 		WechatNumber: src.WechatNumber,
+		UserSkills:   ConvertAPIUserSkillsToUser(src.UserSkills),
 		Honors:       src.Honors,
 		UserInfo:     ConvertAPIToUser(src.UserInfo),
 	}
@@ -268,4 +269,46 @@ func ConvertArticleBriefInfoToAPI(articleList []*article.ArticleBriefInfo) []*ap
 		apiArticleList[i] = apiArticle
 	}
 	return apiArticleList
+}
+
+// ConvertUserSkillsToAPI 将 user.UserSkill 转换为 api.UserSkill
+func ConvertUserSkillsToAPI(src []*user.UserSkill) []*api.UserSkill {
+	if src == nil {
+		return nil
+	}
+	skills := make([]*api.UserSkill, len(src))
+	for i, skill := range src {
+		if skill == nil {
+			continue
+		}
+		skills[i] = &api.UserSkill{
+			UserSkillID: skill.UserSkillId,
+			UserID:      skill.UserId,
+			Skill:       skill.Skill,
+			Category:    skill.Category,
+			Proficiency: skill.Proficiency,
+		}
+	}
+	return skills
+}
+
+// ConvertAPIUserSkillsToUser 将 api.UserSkill 转换为 user.UserSkill
+func ConvertAPIUserSkillsToUser(src []*api.UserSkill) []*user.UserSkill {
+	if src == nil {
+		return nil
+	}
+	skills := make([]*user.UserSkill, len(src))
+	for i, skill := range src {
+		if skill == nil {
+			continue
+		}
+		skills[i] = &user.UserSkill{
+			UserSkillId: skill.UserSkillID,
+			UserId:      skill.UserID,
+			Skill:       skill.Skill,
+			Category:    skill.Category,
+			Proficiency: skill.Proficiency,
+		}
+	}
+	return skills
 }
