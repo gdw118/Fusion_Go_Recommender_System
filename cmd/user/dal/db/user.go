@@ -39,7 +39,7 @@ type UserInfo struct {
 
 // UserSkills 用户所掌握的技能
 type UserSkills struct {
-	UserSkillID int32  `gorm:"primary_key;column:user_skill_id"`
+	UserSkillID int32  `gorm:"primary_key;column:user_skill_id;autoIncrement"`
 	UserID      int32  `gorm:"column:user_id"`
 	Skill       string `gorm:"column:skill"`
 	Category    string `gorm:"column:category"`
@@ -163,6 +163,7 @@ func AddOrUpdateUserSkills(userId int32, skills []*user.UserSkill) error {
 			if skill == nil {
 				continue
 			}
+			// 创建新技能，不指定 UserSkillID，让数据库自动生成
 			newSkill := UserSkills{
 				UserID:      userId,
 				Skill:       skill.Skill,
