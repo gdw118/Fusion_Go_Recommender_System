@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
+	"sync"
+
 	"github.com/Yra-A/Fusion_Go/cmd/user/dal/db"
 	"github.com/Yra-A/Fusion_Go/kitex_gen/user"
-	"sync"
 )
 
 type QueryUserProfileService struct {
@@ -19,6 +20,7 @@ func (s *QueryUserProfileService) QueryUserProfile(user_id int32) (*user.UserPro
 	u := &user.UserProfileInfo{}
 	tasks := []TaskFunc{
 		func() error { return s.FetchUserProfileInfo(user_id, u) },
+		func() error { return s.FetchUserSkills(user_id, u) },
 		func() error { return s.FetchUserHonors(user_id, u) },
 		func() error { return s.FetchUserInfo(user_id, u) },
 	}
@@ -52,6 +54,33 @@ func (s *QueryUserProfileService) FetchUserProfileInfo(user_id int32, u *user.Us
 	u.Introduction = dbUserProfileInfo.Introduction
 	u.QqNumber = dbUserProfileInfo.QQNumber
 	u.WechatNumber = dbUserProfileInfo.WeChatNumber
+	return nil
+}
+
+func (s *QueryUserProfileService) FetchUserSkills(user_id int32, u *user.UserProfileInfo) error {
+	dbSkills, err := db.QueryUserSkillsByUserId(user_id)
+	if err != nil {
+		return err
+	}
+	if len(dbSkills) == 0 {
+		u.UserSkills = []*user.UserSkill{}
+		return nil
+	}
+	// 转换技能列表
+	userSkills := make([]*user.UserSkill, len(dbSkills))
+	for i, skill := range dbSkills {
+		if skill == nil {
+			continue
+		}
+		userSkills[i] = &user.UserSkill{
+			UserSkillId: skill.UserSkillID,
+			UserId:     skill.UserID,
+			Skill:      skill.Skill,
+			Category:   skill.Category,
+			Proficiency: skill.Proficiency,
+		}
+	}
+	u.UserSkills = userSkills
 	return nil
 }
 

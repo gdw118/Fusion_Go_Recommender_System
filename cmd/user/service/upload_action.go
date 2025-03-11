@@ -45,6 +45,9 @@ func (s *UploadUserService) UploadUserProfileInfo(u *user.UserProfileInfo) error
 	if err := db.AddOrUpdateUserProfileInfo(dbu); err != nil {
 		return err
 	}
+	if err := db.AddOrUpdateUserSkills(u.UserInfo.UserId, u.UserSkills); err != nil {
+		return err
+	}
 	if err := db.AddOrUpdateHonors(u.UserInfo.UserId, u.Honors); err != nil {
 		return err
 	}
