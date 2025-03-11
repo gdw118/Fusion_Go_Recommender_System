@@ -27,7 +27,7 @@ func Init() {
 		fmt.Println(err)
 	}
 
-	err = DB.AutoMigrate(&UserProfileInfo{}, &Authentication{}, &Honors{})
+	err = DB.AutoMigrate(&UserProfileInfo{}, &Authentication{}, &UserSkills{}, &Honors{})
 	if err != nil {
 		fmt.Println(err)
 	}

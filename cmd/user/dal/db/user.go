@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/Yra-A/Fusion_Go/kitex_gen/user"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
@@ -34,6 +35,19 @@ type UserInfo struct {
 	Realname       string
 	AvatarURL      string
 	HasProfile     bool
+}
+
+// UserSkills 用户所掌握的技能
+type UserSkills struct {
+	UserSkillID int32  `gorm:"primary_key;column:user_skill_id"`
+	UserID      int32  `gorm:"column:user_id"`
+	Skill       string `gorm:"column:skill_id"`
+	Category    string `gorm:"column:category"`
+	Proficiency string `gorm:"column:proficiency"`
+}
+
+func (UserSkills) TableName() string {
+	return "user_skills"
 }
 
 type Honors struct {
@@ -112,7 +126,7 @@ func QueryUserProfileByUserId(tx *gorm.DB, userId int32) (*UserProfileInfo, erro
 	return u, nil
 }
 
-// AddUserProfileInfo add user profile info
+// AddOrUpdateUserProfileInfo add user profile info
 func AddOrUpdateUserProfileInfo(u *UserProfileInfo) error {
 	return DB.Transaction(func(tx *gorm.DB) error {
 		existingProfile, err := QueryUserProfileByUserId(tx, u.UserID)
@@ -123,6 +137,43 @@ func AddOrUpdateUserProfileInfo(u *UserProfileInfo) error {
 			return tx.Model(existingProfile).Updates(u).Error
 		}
 		return tx.Create(u).Error
+	})
+}
+
+// QueryUserSkillsByUserId 获取某个用户的所有技能
+func QueryUserSkillsByUserId(userId int32) ([]*UserSkills, error) {
+	var skills []*UserSkills
+	if err := DB.Where("user_id = ?", userId).Find(&skills).Error; err != nil {
+		return nil, err
+	}
+	return skills, nil
+}
+
+// AddOrUpdateUserSkills 更新用户的整个技能列表
+func AddOrUpdateUserSkills(userId int32, skills []*user.UserSkill) error {
+	if len(skills) == 0 {
+		return nil
+	}
+	return DB.Transaction(func(tx *gorm.DB) error {
+		// 删除该用户的所有现有技能
+		if err := tx.Where("user_id = ?", userId).Delete(&UserSkills{}).Error; err != nil {
+			return err
+		}
+		for _, skill := range skills {
+			if skill == nil {
+				continue
+			}
+			newSkill := UserSkills{
+				UserID:      userId,
+				Skill:       skill.Skill,
+				Category:    skill.Category,
+				Proficiency: skill.Proficiency,
+			}
+			if err := tx.Create(&newSkill).Error; err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

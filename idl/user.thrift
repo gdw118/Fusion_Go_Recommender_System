@@ -1,5 +1,6 @@
 namespace go user
 
+// 用户基本信息
 struct UserInfo {
     1: i32 user_id,
     2: i32 gender,
@@ -11,20 +12,26 @@ struct UserInfo {
     8: bool has_profile,
     9: string avatar_url,
 }
+// 用户所掌握技能
+struct UserSkill {
+    1: i32 user_skill_id,
+    2: i32 user_id,
+    3: string skill,
+    4: string category,
+    5: string proficiency  // 一般/良好/熟练/精通
+}
 
-
-
-
+// 用户档案信息（全部）
 struct UserProfileInfo {
     1: string introduction,
     2: string qq_number,
     3: string wechat_number,
-    4: list<string> honors,
-    5: UserInfo user_info,
+    4: list<UserSkill> user_skills,
+    5: list<string> honors,
+    6: UserInfo user_info,
 }
 
 // 用户注册
-
 struct UserRegisterRequest {
     1: string username
     2: string password
@@ -36,7 +43,6 @@ struct UserRegisterResponse {
 }
 
 // 用户登录
-
 struct UserLoginRequest {
     1: string username
     2: string password
@@ -49,7 +55,6 @@ struct UserLoginResponse {
 }
 
 // 获取用户信息
-
 struct UserInfoRequest {
     1: i32 user_id
 }
@@ -71,7 +76,6 @@ struct UserInfoUploadResponse {
 }
 
 // 获取用户档案信息
-
 struct UserProfileInfoRequest {
     1: i32 user_id
 }

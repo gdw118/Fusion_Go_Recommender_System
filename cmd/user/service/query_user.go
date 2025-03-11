@@ -2,12 +2,13 @@ package service
 
 import (
 	"context"
+	"sync"
+
 	"github.com/Yra-A/Fusion_Go/cmd/user/dal/db"
 	"github.com/Yra-A/Fusion_Go/kitex_gen/user"
 	"github.com/Yra-A/Fusion_Go/pkg/errno"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
-	"sync"
 )
 
 type TaskFunc func() error
