@@ -142,6 +142,6 @@ ALTER TABLE `contact` COMMENT = '存储竞赛负责人, contest的子表';
 
 ALTER TABLE `article` ADD FOREIGN KEY (`contest_id`) REFERENCES `contest` (`contest_id`);
 
-ALTER TABLE `user_skill` ADD FOREIGN KEY (`user_id`) REFERENCES `user_profile_info` (`user_id`);
+ALTER TABLE `user_skills` ADD FOREIGN KEY (`user_id`) REFERENCES `user_profile_info` (`user_id`);
 
-ALTER TABLE `team_skill` ADD FOREIGN KEY (`team_id`) REFERENCES `team_info` (`team_id`);
+ALTER TABLE `team_skills` ADD FOREIGN KEY (`team_id`) REFERENCES `team_info` (`team_id`);

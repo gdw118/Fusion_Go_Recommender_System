@@ -41,7 +41,7 @@ type UserInfo struct {
 type UserSkills struct {
 	UserSkillID int32  `gorm:"primary_key;column:user_skill_id"`
 	UserID      int32  `gorm:"column:user_id"`
-	Skill       string `gorm:"column:skill_id"`
+	Skill       string `gorm:"column:skill"`
 	Category    string `gorm:"column:category"`
 	Proficiency string `gorm:"column:proficiency"`
 }

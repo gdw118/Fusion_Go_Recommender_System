@@ -5,6 +5,10 @@ package api
 import (
 	"context"
 	"fmt"
+	"io"
+	"strconv"
+	"time"
+
 	"github.com/Yra-A/Fusion_Go/cmd/api/biz/handler"
 	"github.com/Yra-A/Fusion_Go/cmd/api/biz/model/api"
 	"github.com/Yra-A/Fusion_Go/cmd/api/biz/mw/jwt"
@@ -21,9 +25,6 @@ import (
 	"github.com/Yra-A/Fusion_Go/pkg/utils"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
-	"io"
-	"strconv"
-	"time"
 )
 
 // UserRegister .
@@ -151,6 +152,7 @@ func UserProfileInfo(ctx context.Context, c *app.RequestContext) {
 		Introduction: u.Introduction,
 		QqNumber:     u.QqNumber,
 		WechatNumber: u.WechatNumber,
+		UserSkills:   utils.ConvertUserSkillsToAPI(u.UserSkills),
 		Honors:       u.Honors,
 		UserInfo:     utils.ConvertUserToAPI(u.UserInfo),
 	}
@@ -171,14 +173,8 @@ func UserProfileUpload(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	kresp, err := rpc.UserProfileUpload(context.Background(), &user.UserProfileUploadRequest{
-		UserId: req.UserID,
-		UserProfileInfo: &user.UserProfileInfo{
-			Introduction: req.UserProfileInfo.Introduction,
-			QqNumber:     req.UserProfileInfo.QqNumber,
-			WechatNumber: req.UserProfileInfo.WechatNumber,
-			Honors:       req.UserProfileInfo.Honors,
-			UserInfo:     utils.ConvertAPIToUser(req.UserProfileInfo.UserInfo),
-		},
+		UserId:          req.UserID,
+		UserProfileInfo: utils.ConvertAPIProfileToUser(req.UserProfileInfo),
 	})
 	if err != nil {
 		handler.BadResponse(c, err)

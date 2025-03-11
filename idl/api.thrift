@@ -16,14 +16,21 @@ struct UserInfo {
 }
 
 
-
+struct UserSkill {
+    1: i32 user_skill_id,
+    2: i32 user_id,
+    3: string skill,
+    4: string category,
+    5: string proficiency  // 一般/良好/熟练/精通
+}
 
 struct UserProfileInfo {
     1: string introduction,
     2: string qq_number,
     3: string wechat_number,
-    4: list<string> honors,
-    5: UserInfo user_info,
+    4: list<UserSkill> user_skills,
+    5: list<string> honors,
+    6: UserInfo user_info,
 }
 
 // 用户注册
