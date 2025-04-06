@@ -114,6 +114,7 @@ CREATE TABLE `team_skills` (
     `skill` VARCHAR(255) NOT NULL,
     `category` VARCHAR(255) NOT NULL COMMENT '技能分类，如编程语言、设计工具',
     `job` VARCHAR(255) NOT NULL COMMENT '什么岗位需要该skill'
+
 );
 
 ALTER TABLE `contest` COMMENT = '存储赛事板块';
