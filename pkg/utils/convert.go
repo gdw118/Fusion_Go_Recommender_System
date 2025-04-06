@@ -42,7 +42,7 @@ func ConvertAPIProfileToUser(src *api.UserProfileInfo) *user.UserProfileInfo {
 		Introduction: src.Introduction,
 		QqNumber:     src.QqNumber,
 		WechatNumber: src.WechatNumber,
-		UserSkills:   ConvertAPIUserSkillsToUser(src.UserSkills),
+		UserSkills:   ConvertAPIToUserSkills(src.UserSkills),
 		Honors:       src.Honors,
 		UserInfo:     ConvertAPIToUser(src.UserInfo),
 	}
@@ -214,6 +214,7 @@ func ConverTeamInfoToAPI(src *team.TeamInfo) *api.TeamInfo {
 	return &api.TeamInfo{
 		TeamBriefInfo: ConvertTeamBriefInfoToAPI(src.TeamBriefInfo),
 		Description:   src.Description,
+		TeamSkills:    ConvertTeamSkillsToAPI(src.TeamSkills),
 		Members:       ConvertMemberInfoListToAPI(src.Members),
 	}
 }
@@ -292,8 +293,8 @@ func ConvertUserSkillsToAPI(src []*user.UserSkill) []*api.UserSkill {
 	return skills
 }
 
-// ConvertAPIUserSkillsToUser 将 api.UserSkill 转换为 user.UserSkill
-func ConvertAPIUserSkillsToUser(src []*api.UserSkill) []*user.UserSkill {
+// ConvertAPIToUserSkills 将 api.UserSkill 转换为 user.UserSkill
+func ConvertAPIToUserSkills(src []*api.UserSkill) []*user.UserSkill {
 	if src == nil {
 		return nil
 	}
@@ -308,6 +309,48 @@ func ConvertAPIUserSkillsToUser(src []*api.UserSkill) []*user.UserSkill {
 			Skill:       skill.Skill,
 			Category:    skill.Category,
 			Proficiency: skill.Proficiency,
+		}
+	}
+	return skills
+}
+
+// ConvertTeamSkillsToAPI 将 team.TeamSkill 转换为 api.TeamSkill
+func ConvertTeamSkillsToAPI(src []*team.TeamSkill) []*api.TeamSkill {
+	if src == nil {
+		return nil
+	}
+	skills := make([]*api.TeamSkill, len(src))
+	for i, skill := range src {
+		if skill == nil {
+			continue
+		}
+		skills[i] = &api.TeamSkill{
+			TeamSkillID: skill.TeamSkillId,
+			TeamID:      skill.TeamId,
+			Skill:       skill.Skill,
+			Category:    skill.Category,
+			Job:         skill.Job,
+		}
+	}
+	return skills
+}
+
+// ConvertAPIToTeamSkills 将 api.TeamSkill 转换为 team.TeamSkill
+func ConvertAPIToTeamSkills(src []*api.TeamSkill) []*team.TeamSkill {
+	if src == nil {
+		return nil
+	}
+	skills := make([]*team.TeamSkill, len(src))
+	for i, skill := range src {
+		if skill == nil {
+			continue
+		}
+		skills[i] = &team.TeamSkill{
+			TeamSkillId: skill.TeamSkillID,
+			TeamId:      skill.TeamID,
+			Skill:       skill.Skill,
+			Category:    skill.Category,
+			Job:         skill.Job,
 		}
 	}
 	return skills

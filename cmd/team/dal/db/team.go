@@ -1,9 +1,10 @@
 package db
 
 import (
+	"time"
+
 	"github.com/Yra-A/Fusion_Go/kitex_gen/team"
 	"github.com/Yra-A/Fusion_Go/pkg/errno"
-	"time"
 )
 
 type TeamInfo struct {
@@ -19,6 +20,19 @@ type TeamInfo struct {
 
 func (TeamInfo) TableName() string {
 	return "team_info"
+}
+
+// TeamSkills 队伍招募岗位所需要的技能
+type TeamSkills struct {
+	TeamSkillID int32  `gorm:"primary_key;column:team_skill_id;autoIncrement"`
+	TeamID      int32  `gorm:"column:team_id"`
+	Skill       string `gorm:"column:skill"`
+	Category    string `gorm:"column:category"`
+	Job         string `gorm:"column:job"`
+}
+
+func (TeamSkills) TableName() string {
+	return "team_skills"
 }
 
 type TeamApplication struct {
@@ -44,8 +58,42 @@ func (TeamUserRelationship) TableName() string {
 	return "team_user_relationship"
 }
 
+// CreateTeamSkills 创建团队技能需求
+func CreateTeamSkills(teamID int32, skills []*team.TeamSkill) error {
+	for _, skill := range skills {
+		if err := DB.Create(&TeamSkills{
+			TeamID:   teamID,
+			Skill:    skill.Skill,
+			Category: skill.Category,
+			Job:      skill.Job,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GetTeamSkills 获取团队技能需求
+func GetTeamSkills(teamID int32) ([]*team.TeamSkill, error) {
+	var teamSkills []*TeamSkills
+	if err := DB.Where("team_id = ?", teamID).Find(&teamSkills).Error; err != nil {
+		return nil, err
+	}
+	var skills []*team.TeamSkill
+	for _, ts := range teamSkills {
+		skills = append(skills, &team.TeamSkill{
+			TeamSkillId: ts.TeamSkillID,
+			TeamId:      ts.TeamID,
+			Skill:       ts.Skill,
+			Category:    ts.Category,
+			Job:         ts.Job,
+		})
+	}
+	return skills, nil
+}
+
 // CreateTeam 创建团队
-func CreateTeam(user_id int32, contest_id int32, title string, goal string, description string) (int32, error) {
+func CreateTeam(user_id int32, contest_id int32, title string, goal string, description string, skills []*team.TeamSkill) (int32, error) {
 	team := &TeamInfo{
 		Title:        title,
 		ContestID:    contest_id,
@@ -63,18 +111,36 @@ func CreateTeam(user_id int32, contest_id int32, title string, goal string, desc
 	if err := DB.Select("team_id").Where("leader_id = ?", user_id).Last(&teamInfo).Error; err != nil {
 		return 0, err
 	}
+	
+	// 创建团队技能需求
+	if err := CreateTeamSkills(teamInfo.TeamID, skills); err != nil {
+		return 0, err
+	}
+	
 	TeamAddUser(teamInfo.TeamID, user_id)
 	return teamInfo.TeamID, nil
 }
 
 // ModifyTeam 修改团队信息
-func ModifyTeam(team_id int32, title string, goal string, description string) error {
+func ModifyTeam(team_id int32, title string, goal string, description string, skills []*team.TeamSkill) error {
+	// 修改团队基本信息
 	team := &TeamInfo{
 		TeamID: team_id,
 	}
 	if err := DB.Model(&team).Updates(map[string]interface{}{"title": title, "goal": goal, "description": description}).Error; err != nil {
 		return err
 	}
+
+	// 删除原有的技能需求
+	if err := DB.Where("team_id = ?", team_id).Delete(&TeamSkills{}).Error; err != nil {
+		return err
+	}
+
+	// 创建新的技能需求
+	if err := CreateTeamSkills(team_id, skills); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -105,6 +171,13 @@ func QueryTeamInfo(team_id int32) (*team.TeamInfo, error) {
 	if err := DB.Where("team_id = ?", team_id).First(&teamInfo).Error; err != nil {
 		return nil, err
 	}
+	
+	// 获取团队技能需求
+	teamSkills, err := GetTeamSkills(team_id)
+	if err != nil {
+		return nil, err
+	}
+	
 	var teamUserRelationship []*TeamUserRelationship
 	if err := DB.Where("team_id = ?", team_id).Find(&teamUserRelationship).Error; err != nil {
 		return nil, err
@@ -128,6 +201,7 @@ func QueryTeamInfo(team_id int32) (*team.TeamInfo, error) {
 			},
 		},
 		Description: teamInfo.Description,
+		TeamSkills:  teamSkills,
 		Members:     memberList,
 	}, nil
 }

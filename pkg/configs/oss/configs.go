@@ -10,7 +10,7 @@ var (
 const (
 	EndPoint = "oss-cn-shanghai.aliyuncs.com"
 
-	OssBucketName = "yra-fusion"
+	OssBucketName = "gdw-fusion"
 	BaseURL       = "public/fusion/"
-	PublicURL     = "https://yra-fusion.oss-cn-shanghai.aliyuncs.com/" + BaseURL
+	PublicURL     = "https://gdw-fusion.oss-cn-shanghai.aliyuncs.com/" + BaseURL
 )
