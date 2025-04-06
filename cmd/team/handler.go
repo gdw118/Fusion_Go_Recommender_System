@@ -15,7 +15,7 @@ type TeamServiceImpl struct{}
 func (s *TeamServiceImpl) TeamCreate(ctx context.Context, req *team.TeamCreateRequest) (resp *team.TeamCreateResponse, err error) {
 	klog.CtxDebugf(ctx, "TeamCreate called")
 	resp = new(team.TeamCreateResponse)
-	team_id, err := service.NewCreateTeamService(ctx).CreateTeam(req.UserId, req.TeamId, req.ContestId, req.Title, req.Goal, req.Description)
+	team_id, err := service.NewCreateTeamService(ctx).CreateTeam(req.UserId, req.TeamId, req.ContestId, req.Title, req.Goal, req.Description, req.TeamSkills)
 	if err != nil {
 		resp.StatusCode = errno.Fail.ErrCode
 		resp.StatusMsg = errno.Fail.ErrMsg

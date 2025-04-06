@@ -22,10 +22,19 @@ struct TeamBriefInfo {
     7: i32 contest_id,
 }
 
+struct TeamSkill {
+    1: i32 team_skill_id,
+    2: i32 team_id,
+    3: string skill,
+    4: string category,
+    5: string job,  // 什么岗位需要该skill
+}
+
 struct TeamInfo {
     1: TeamBriefInfo team_brief_info,
     2: string description,
-    3: list<MemberInfo> members,
+    3: list<TeamSkill> team_skills,
+    4: list<MemberInfo> members,
 }
 
 struct TeamApplication {
@@ -43,7 +52,8 @@ struct TeamCreateRequest {
     3: string title
     4: string goal
     5: string description
-    6: i32 contest_id
+    6: list<TeamSkill> team_skills,
+    7: i32 contest_id
 }
 
 struct TeamCreateResponse {

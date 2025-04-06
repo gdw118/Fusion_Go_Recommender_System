@@ -346,6 +346,7 @@ func TeamCreate(ctx context.Context, c *app.RequestContext) {
 		Title:       req.Title,
 		Goal:        req.Goal,
 		Description: req.Description,
+		TeamSkills:  utils.ConvertAPIToTeamSkills(req.TeamSkills),
 	})
 	if err != nil {
 		handler.BadResponse(c, err)
