@@ -68,6 +68,7 @@ struct TeamListRequest {
     1: i32 contest_id,
     2: i32 limit,
     3: i32 offset,
+    4: i32 user_id,
 }
 
 struct TeamListResponse {

@@ -11,7 +11,6 @@ import (
 	"github.com/Yra-A/Fusion_Go/cmd/team/dal/db"
 	"github.com/Yra-A/Fusion_Go/kitex_gen/team"
 	"github.com/Yra-A/Fusion_Go/kitex_gen/user"
-	"github.com/Yra-A/Fusion_Go/kitex_gen/user/userservice"
 	"github.com/Yra-A/Fusion_Go/pkg/configs/openai"
 	"github.com/cloudwego/kitex/pkg/klog"
 	openaiClient "github.com/sashabaranov/go-openai"
@@ -49,38 +48,18 @@ func getGenderText(gender int32) string {
 }
 
 // GenerateUserEmbedding 生成用户embedding
-func (s *RecommenderService) GenerateUserEmbedding(ctx context.Context, userID int32) ([]float64, error) {
-	klog.CtxInfof(ctx, "开始生成用户embedding, userID=%v", userID)
+func (s *RecommenderService) GenerateUserEmbedding(ctx context.Context, userProfile *user.UserProfileInfo) ([]float64, error) {
+	klog.CtxInfof(ctx, "开始生成用户embedding, userID=%v", userProfile.UserInfo.UserId)
 	
-	// 从用户服务获取完整的用户信息
-	userClient, err := userservice.NewClient("user")
-	if err != nil {
-		klog.CtxErrorf(ctx, "创建用户服务客户端失败: %v", err)
-		return nil, fmt.Errorf("failed to create user client: %v", err)
-	}
-
-	// 获取用户信息
-	userProfileResp, err := userClient.UserProfileInfo(ctx, &user.UserProfileInfoRequest{
-		UserId: userID,
-	})
-	if err != nil {
-		klog.CtxErrorf(ctx, "获取用户信息失败: %v", err)
-		return nil, err
-	}
-	if userProfileResp.StatusCode != 0 {
-		klog.CtxErrorf(ctx, "获取用户信息返回错误状态码: %v, 消息: %v", userProfileResp.StatusCode, userProfileResp.StatusMsg)
-		return nil, fmt.Errorf("获取用户信息失败: %s", userProfileResp.StatusMsg)
-	}
-
 	// 构建用户描述
 	description := fmt.Sprintf("性别: %s, 入学年份: %d, 学院: %s, 昵称: %s, 自我介绍: %s, 荣誉: %v, 技能: %v", 
-		getGenderText(userProfileResp.UserProfileInfo.UserInfo.Gender),
-		userProfileResp.UserProfileInfo.UserInfo.EnrollmentYear,
-		userProfileResp.UserProfileInfo.UserInfo.College,
-		userProfileResp.UserProfileInfo.UserInfo.Nickname,
-		userProfileResp.UserProfileInfo.Introduction,
-		userProfileResp.UserProfileInfo.Honors,
-		userProfileResp.UserProfileInfo.UserSkills)
+		getGenderText(userProfile.UserInfo.Gender),
+		userProfile.UserInfo.EnrollmentYear,
+		userProfile.UserInfo.College,
+		userProfile.UserInfo.Nickname,
+		userProfile.Introduction,
+		userProfile.Honors,
+		userProfile.UserSkills)
 	
 	klog.CtxInfof(ctx, "用户描述构建完成: %s", description)
 
@@ -111,11 +90,11 @@ func (s *RecommenderService) GenerateUserEmbedding(ctx context.Context, userID i
 }
 
 // RecommendTeams 推荐队伍
-func (s *RecommenderService) RecommendTeams(ctx context.Context, userID int32, contestID int32) ([]*team.TeamInfo, error) {
-	klog.CtxInfof(ctx, "开始推荐队伍, userID=%v, contestID=%v", userID, contestID)
+func (s *RecommenderService) RecommendTeams(ctx context.Context, userProfile *user.UserProfileInfo, contestID int32) ([]*team.TeamInfo, error) {
+	klog.CtxInfof(ctx, "开始推荐队伍, userID=%v, contestID=%v", userProfile.UserInfo.UserId, contestID)
 	
 	// 获取用户嵌入向量
-	userEmbedding, err := s.GenerateUserEmbedding(ctx, userID)
+	userEmbedding, err := s.GenerateUserEmbedding(ctx, userProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -134,13 +113,16 @@ func (s *RecommenderService) RecommendTeams(ctx context.Context, userID int32, c
 		score float64
 	}
 	var scores []teamScore
+	var failedTeams []*team.TeamInfo
 
 	for _, team := range teams {
 		// 解析队伍的嵌入向量
 		var teamEmbedding []float64
 		if err := json.Unmarshal([]byte(team.Embedding), &teamEmbedding); err != nil {
 			klog.CtxErrorf(ctx, "解析队伍embedding失败, teamID=%v: %v", team.TeamBriefInfo.TeamId, err)
-			continue // 跳过解析失败的队伍
+			// 将解析失败的队伍添加到失败列表
+			failedTeams = append(failedTeams, team)
+			continue
 		}
 
 		// 计算余弦相似度
@@ -156,11 +138,17 @@ func (s *RecommenderService) RecommendTeams(ctx context.Context, userID int32, c
 		return scores[i].score > scores[j].score
 	})
 
-	// 返回前10个推荐队伍
-	result := make([]*team.TeamInfo, 0, 10)
-	for i := 0; i < len(scores) && i < 10; i++ {
+	// 返回所有队伍,解析失败的队伍放在最后
+	result := make([]*team.TeamInfo, 0, len(teams))
+	for i := 0; i < len(scores); i++ {
 		result = append(result, scores[i].team)
 		klog.CtxInfof(ctx, "最终推荐队伍 %v, 分数: %v", scores[i].team.TeamBriefInfo.TeamId, scores[i].score)
+	}
+	
+	// 将解析失败的队伍添加到结果末尾
+	result = append(result, failedTeams...)
+	for _, team := range failedTeams {
+		klog.CtxInfof(ctx, "解析失败的队伍 %v 被添加到末尾", team.TeamBriefInfo.TeamId)
 	}
 
 	klog.CtxInfof(ctx, "推荐完成, 共推荐 %d 个队伍", len(result))

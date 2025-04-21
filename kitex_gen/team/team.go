@@ -1481,12 +1481,12 @@ func (p *TeamSkill) Field5DeepEqual(src string) bool {
 }
 
 type TeamInfo struct {
-	TeamBriefInfo        *TeamBriefInfo `thrift:"team_brief_info,1" frugal:"1,default,TeamBriefInfo" json:"team_brief_info"`
-	Description          string         `thrift:"description,2" frugal:"2,default,string" json:"description"`
-	TeamSkills           []*TeamSkill   `thrift:"team_skills,3" frugal:"3,default,list<TeamSkill>" json:"team_skills"`
-	Members              []*MemberInfo  `thrift:"members,4" frugal:"4,default,list<MemberInfo>" json:"members"`
-	Embedding            string         `thrift:"embedding,5" frugal:"5,default,string" json:"embedding"`
-	EmbeddingUpdatedTime int64          `thrift:"embedding_updated_time,6" frugal:"6,default,i64" json:"embedding_updated_time"`
+	TeamBriefInfo      *TeamBriefInfo `thrift:"team_brief_info,1" frugal:"1,default,TeamBriefInfo" json:"team_brief_info"`
+	Description        string         `thrift:"description,2" frugal:"2,default,string" json:"description"`
+	TeamSkills         []*TeamSkill   `thrift:"team_skills,3" frugal:"3,default,list<TeamSkill>" json:"team_skills"`
+	Members            []*MemberInfo  `thrift:"members,4" frugal:"4,default,list<MemberInfo>" json:"members"`
+	Embedding          string         `thrift:"embedding,5" frugal:"5,default,string" json:"embedding"`
+	EmbeddingUpdatedAt int64          `thrift:"embedding_updated_at,6" frugal:"6,default,i64" json:"embedding_updated_at"`
 }
 
 func NewTeamInfo() *TeamInfo {
@@ -1522,8 +1522,8 @@ func (p *TeamInfo) GetEmbedding() (v string) {
 	return p.Embedding
 }
 
-func (p *TeamInfo) GetEmbeddingUpdatedTime() (v int64) {
-	return p.EmbeddingUpdatedTime
+func (p *TeamInfo) GetEmbeddingUpdatedAt() (v int64) {
+	return p.EmbeddingUpdatedAt
 }
 func (p *TeamInfo) SetTeamBriefInfo(val *TeamBriefInfo) {
 	p.TeamBriefInfo = val
@@ -1540,8 +1540,8 @@ func (p *TeamInfo) SetMembers(val []*MemberInfo) {
 func (p *TeamInfo) SetEmbedding(val string) {
 	p.Embedding = val
 }
-func (p *TeamInfo) SetEmbeddingUpdatedTime(val int64) {
-	p.EmbeddingUpdatedTime = val
+func (p *TeamInfo) SetEmbeddingUpdatedAt(val int64) {
+	p.EmbeddingUpdatedAt = val
 }
 
 var fieldIDToName_TeamInfo = map[int16]string{
@@ -1550,7 +1550,7 @@ var fieldIDToName_TeamInfo = map[int16]string{
 	3: "team_skills",
 	4: "members",
 	5: "embedding",
-	6: "embedding_updated_time",
+	6: "embedding_updated_at",
 }
 
 func (p *TeamInfo) IsSetTeamBriefInfo() bool {
@@ -1736,7 +1736,7 @@ func (p *TeamInfo) ReadField6(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadI64(); err != nil {
 		return err
 	} else {
-		p.EmbeddingUpdatedTime = v
+		p.EmbeddingUpdatedAt = v
 	}
 	return nil
 }
@@ -1892,10 +1892,10 @@ WriteFieldEndError:
 }
 
 func (p *TeamInfo) writeField6(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("embedding_updated_time", thrift.I64, 6); err != nil {
+	if err = oprot.WriteFieldBegin("embedding_updated_at", thrift.I64, 6); err != nil {
 		goto WriteFieldBeginError
 	}
-	if err := oprot.WriteI64(p.EmbeddingUpdatedTime); err != nil {
+	if err := oprot.WriteI64(p.EmbeddingUpdatedAt); err != nil {
 		return err
 	}
 	if err = oprot.WriteFieldEnd(); err != nil {
@@ -1936,7 +1936,7 @@ func (p *TeamInfo) DeepEqual(ano *TeamInfo) bool {
 	if !p.Field5DeepEqual(ano.Embedding) {
 		return false
 	}
-	if !p.Field6DeepEqual(ano.EmbeddingUpdatedTime) {
+	if !p.Field6DeepEqual(ano.EmbeddingUpdatedAt) {
 		return false
 	}
 	return true
@@ -1991,7 +1991,7 @@ func (p *TeamInfo) Field5DeepEqual(src string) bool {
 }
 func (p *TeamInfo) Field6DeepEqual(src int64) bool {
 
-	if p.EmbeddingUpdatedTime != src {
+	if p.EmbeddingUpdatedAt != src {
 		return false
 	}
 	return true
@@ -3293,6 +3293,7 @@ type TeamListRequest struct {
 	ContestId int32 `thrift:"contest_id,1" frugal:"1,default,i32" json:"contest_id"`
 	Limit     int32 `thrift:"limit,2" frugal:"2,default,i32" json:"limit"`
 	Offset    int32 `thrift:"offset,3" frugal:"3,default,i32" json:"offset"`
+	UserId    int32 `thrift:"user_id,4" frugal:"4,default,i32" json:"user_id"`
 }
 
 func NewTeamListRequest() *TeamListRequest {
@@ -3314,6 +3315,10 @@ func (p *TeamListRequest) GetLimit() (v int32) {
 func (p *TeamListRequest) GetOffset() (v int32) {
 	return p.Offset
 }
+
+func (p *TeamListRequest) GetUserId() (v int32) {
+	return p.UserId
+}
 func (p *TeamListRequest) SetContestId(val int32) {
 	p.ContestId = val
 }
@@ -3323,11 +3328,15 @@ func (p *TeamListRequest) SetLimit(val int32) {
 func (p *TeamListRequest) SetOffset(val int32) {
 	p.Offset = val
 }
+func (p *TeamListRequest) SetUserId(val int32) {
+	p.UserId = val
+}
 
 var fieldIDToName_TeamListRequest = map[int16]string{
 	1: "contest_id",
 	2: "limit",
 	3: "offset",
+	4: "user_id",
 }
 
 func (p *TeamListRequest) Read(iprot thrift.TProtocol) (err error) {
@@ -3372,6 +3381,16 @@ func (p *TeamListRequest) Read(iprot thrift.TProtocol) (err error) {
 		case 3:
 			if fieldTypeId == thrift.I32 {
 				if err = p.ReadField3(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else {
+				if err = iprot.Skip(fieldTypeId); err != nil {
+					goto SkipFieldError
+				}
+			}
+		case 4:
+			if fieldTypeId == thrift.I32 {
+				if err = p.ReadField4(iprot); err != nil {
 					goto ReadFieldError
 				}
 			} else {
@@ -3436,6 +3455,15 @@ func (p *TeamListRequest) ReadField3(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *TeamListRequest) ReadField4(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI32(); err != nil {
+		return err
+	} else {
+		p.UserId = v
+	}
+	return nil
+}
+
 func (p *TeamListRequest) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("TeamListRequest"); err != nil {
@@ -3452,6 +3480,10 @@ func (p *TeamListRequest) Write(oprot thrift.TProtocol) (err error) {
 		}
 		if err = p.writeField3(oprot); err != nil {
 			fieldId = 3
+			goto WriteFieldError
+		}
+		if err = p.writeField4(oprot); err != nil {
+			fieldId = 4
 			goto WriteFieldError
 		}
 
@@ -3524,6 +3556,23 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 3 end error: ", p), err)
 }
 
+func (p *TeamListRequest) writeField4(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("user_id", thrift.I32, 4); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := oprot.WriteI32(p.UserId); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 4 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 4 end error: ", p), err)
+}
+
 func (p *TeamListRequest) String() string {
 	if p == nil {
 		return "<nil>"
@@ -3546,6 +3595,9 @@ func (p *TeamListRequest) DeepEqual(ano *TeamListRequest) bool {
 	if !p.Field3DeepEqual(ano.Offset) {
 		return false
 	}
+	if !p.Field4DeepEqual(ano.UserId) {
+		return false
+	}
 	return true
 }
 
@@ -3566,6 +3618,13 @@ func (p *TeamListRequest) Field2DeepEqual(src int32) bool {
 func (p *TeamListRequest) Field3DeepEqual(src int32) bool {
 
 	if p.Offset != src {
+		return false
+	}
+	return true
+}
+func (p *TeamListRequest) Field4DeepEqual(src int32) bool {
+
+	if p.UserId != src {
 		return false
 	}
 	return true

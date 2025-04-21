@@ -1450,7 +1450,7 @@ func (p *TeamInfo) FastReadField6(buf []byte) (int, error) {
 	} else {
 		offset += l
 
-		p.EmbeddingUpdatedTime = v
+		p.EmbeddingUpdatedAt = v
 
 	}
 	return offset, nil
@@ -1553,8 +1553,8 @@ func (p *TeamInfo) fastWriteField5(buf []byte, binaryWriter bthrift.BinaryWriter
 
 func (p *TeamInfo) fastWriteField6(buf []byte, binaryWriter bthrift.BinaryWriter) int {
 	offset := 0
-	offset += bthrift.Binary.WriteFieldBegin(buf[offset:], "embedding_updated_time", thrift.I64, 6)
-	offset += bthrift.Binary.WriteI64(buf[offset:], p.EmbeddingUpdatedTime)
+	offset += bthrift.Binary.WriteFieldBegin(buf[offset:], "embedding_updated_at", thrift.I64, 6)
+	offset += bthrift.Binary.WriteI64(buf[offset:], p.EmbeddingUpdatedAt)
 
 	offset += bthrift.Binary.WriteFieldEnd(buf[offset:])
 	return offset
@@ -1612,8 +1612,8 @@ func (p *TeamInfo) field5Length() int {
 
 func (p *TeamInfo) field6Length() int {
 	l := 0
-	l += bthrift.Binary.FieldBeginLength("embedding_updated_time", thrift.I64, 6)
-	l += bthrift.Binary.I64Length(p.EmbeddingUpdatedTime)
+	l += bthrift.Binary.FieldBeginLength("embedding_updated_at", thrift.I64, 6)
+	l += bthrift.Binary.I64Length(p.EmbeddingUpdatedAt)
 
 	l += bthrift.Binary.FieldEndLength()
 	return l
@@ -2717,6 +2717,20 @@ func (p *TeamListRequest) FastRead(buf []byte) (int, error) {
 					goto SkipFieldError
 				}
 			}
+		case 4:
+			if fieldTypeId == thrift.I32 {
+				l, err = p.FastReadField4(buf[offset:])
+				offset += l
+				if err != nil {
+					goto ReadFieldError
+				}
+			} else {
+				l, err = bthrift.Binary.Skip(buf[offset:], fieldTypeId)
+				offset += l
+				if err != nil {
+					goto SkipFieldError
+				}
+			}
 		default:
 			l, err = bthrift.Binary.Skip(buf[offset:], fieldTypeId)
 			offset += l
@@ -2794,6 +2808,20 @@ func (p *TeamListRequest) FastReadField3(buf []byte) (int, error) {
 	return offset, nil
 }
 
+func (p *TeamListRequest) FastReadField4(buf []byte) (int, error) {
+	offset := 0
+
+	if v, l, err := bthrift.Binary.ReadI32(buf[offset:]); err != nil {
+		return offset, err
+	} else {
+		offset += l
+
+		p.UserId = v
+
+	}
+	return offset, nil
+}
+
 // for compatibility
 func (p *TeamListRequest) FastWrite(buf []byte) int {
 	return 0
@@ -2806,6 +2834,7 @@ func (p *TeamListRequest) FastWriteNocopy(buf []byte, binaryWriter bthrift.Binar
 		offset += p.fastWriteField1(buf[offset:], binaryWriter)
 		offset += p.fastWriteField2(buf[offset:], binaryWriter)
 		offset += p.fastWriteField3(buf[offset:], binaryWriter)
+		offset += p.fastWriteField4(buf[offset:], binaryWriter)
 	}
 	offset += bthrift.Binary.WriteFieldStop(buf[offset:])
 	offset += bthrift.Binary.WriteStructEnd(buf[offset:])
@@ -2819,6 +2848,7 @@ func (p *TeamListRequest) BLength() int {
 		l += p.field1Length()
 		l += p.field2Length()
 		l += p.field3Length()
+		l += p.field4Length()
 	}
 	l += bthrift.Binary.FieldStopLength()
 	l += bthrift.Binary.StructEndLength()
@@ -2852,6 +2882,15 @@ func (p *TeamListRequest) fastWriteField3(buf []byte, binaryWriter bthrift.Binar
 	return offset
 }
 
+func (p *TeamListRequest) fastWriteField4(buf []byte, binaryWriter bthrift.BinaryWriter) int {
+	offset := 0
+	offset += bthrift.Binary.WriteFieldBegin(buf[offset:], "user_id", thrift.I32, 4)
+	offset += bthrift.Binary.WriteI32(buf[offset:], p.UserId)
+
+	offset += bthrift.Binary.WriteFieldEnd(buf[offset:])
+	return offset
+}
+
 func (p *TeamListRequest) field1Length() int {
 	l := 0
 	l += bthrift.Binary.FieldBeginLength("contest_id", thrift.I32, 1)
@@ -2874,6 +2913,15 @@ func (p *TeamListRequest) field3Length() int {
 	l := 0
 	l += bthrift.Binary.FieldBeginLength("offset", thrift.I32, 3)
 	l += bthrift.Binary.I32Length(p.Offset)
+
+	l += bthrift.Binary.FieldEndLength()
+	return l
+}
+
+func (p *TeamListRequest) field4Length() int {
+	l := 0
+	l += bthrift.Binary.FieldBeginLength("user_id", thrift.I32, 4)
+	l += bthrift.Binary.I32Length(p.UserId)
 
 	l += bthrift.Binary.FieldEndLength()
 	return l

@@ -217,7 +217,7 @@ func ModifyTeam(team_id int32, title string, goal string, description string, sk
 	return nil
 }
 
-func QueryTeamList(contest_id int32) ([]*team.TeamBriefInfo, error) {
+func QueryTeamList(contest_id int32, user_id int32) ([]*team.TeamBriefInfo, error) {
 	var teamList []*TeamInfo
 	if err := DB.Where("contest_id = ?", contest_id).Find(&teamList).Error; err != nil {
 		return nil, err

@@ -375,6 +375,7 @@ func TeamList(ctx context.Context, c *app.RequestContext) {
 		ContestId: req.ContestID,
 		Limit:     req.Limit,
 		Offset:    req.Offset,
+		UserId:    req.UserID,
 	})
 	if err != nil {
 		handler.BadResponse(c, err)
