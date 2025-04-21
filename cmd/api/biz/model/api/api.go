@@ -9997,6 +9997,7 @@ type TeamListRequest struct {
 	ContestID     int32  `thrift:"contest_id,2" json:"contest_id" path:"contest_id"`
 	Limit         int32  `thrift:"limit,3" json:"limit" query:"limit"`
 	Offset        int32  `thrift:"offset,4" json:"offset" query:"offset"`
+	UserID        int32  `thrift:"user_id,5" json:"user_id" query:"user_id"`
 }
 
 func NewTeamListRequest() *TeamListRequest {
@@ -10019,11 +10020,16 @@ func (p *TeamListRequest) GetOffset() (v int32) {
 	return p.Offset
 }
 
+func (p *TeamListRequest) GetUserID() (v int32) {
+	return p.UserID
+}
+
 var fieldIDToName_TeamListRequest = map[int16]string{
 	1: "authorization",
 	2: "contest_id",
 	3: "limit",
 	4: "offset",
+	5: "user_id",
 }
 
 func (p *TeamListRequest) Read(iprot thrift.TProtocol) (err error) {
@@ -10078,6 +10084,16 @@ func (p *TeamListRequest) Read(iprot thrift.TProtocol) (err error) {
 		case 4:
 			if fieldTypeId == thrift.I32 {
 				if err = p.ReadField4(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else {
+				if err = iprot.Skip(fieldTypeId); err != nil {
+					goto SkipFieldError
+				}
+			}
+		case 5:
+			if fieldTypeId == thrift.I32 {
+				if err = p.ReadField5(iprot); err != nil {
 					goto ReadFieldError
 				}
 			} else {
@@ -10151,6 +10167,15 @@ func (p *TeamListRequest) ReadField4(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *TeamListRequest) ReadField5(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI32(); err != nil {
+		return err
+	} else {
+		p.UserID = v
+	}
+	return nil
+}
+
 func (p *TeamListRequest) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("TeamListRequest"); err != nil {
@@ -10171,6 +10196,10 @@ func (p *TeamListRequest) Write(oprot thrift.TProtocol) (err error) {
 		}
 		if err = p.writeField4(oprot); err != nil {
 			fieldId = 4
+			goto WriteFieldError
+		}
+		if err = p.writeField5(oprot); err != nil {
+			fieldId = 5
 			goto WriteFieldError
 		}
 
@@ -10258,6 +10287,23 @@ WriteFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 4 begin error: ", p), err)
 WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 4 end error: ", p), err)
+}
+
+func (p *TeamListRequest) writeField5(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("user_id", thrift.I32, 5); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := oprot.WriteI32(p.UserID); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 5 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 5 end error: ", p), err)
 }
 
 func (p *TeamListRequest) String() string {

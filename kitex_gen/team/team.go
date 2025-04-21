@@ -1481,10 +1481,12 @@ func (p *TeamSkill) Field5DeepEqual(src string) bool {
 }
 
 type TeamInfo struct {
-	TeamBriefInfo *TeamBriefInfo `thrift:"team_brief_info,1" frugal:"1,default,TeamBriefInfo" json:"team_brief_info"`
-	Description   string         `thrift:"description,2" frugal:"2,default,string" json:"description"`
-	TeamSkills    []*TeamSkill   `thrift:"team_skills,3" frugal:"3,default,list<TeamSkill>" json:"team_skills"`
-	Members       []*MemberInfo  `thrift:"members,4" frugal:"4,default,list<MemberInfo>" json:"members"`
+	TeamBriefInfo        *TeamBriefInfo `thrift:"team_brief_info,1" frugal:"1,default,TeamBriefInfo" json:"team_brief_info"`
+	Description          string         `thrift:"description,2" frugal:"2,default,string" json:"description"`
+	TeamSkills           []*TeamSkill   `thrift:"team_skills,3" frugal:"3,default,list<TeamSkill>" json:"team_skills"`
+	Members              []*MemberInfo  `thrift:"members,4" frugal:"4,default,list<MemberInfo>" json:"members"`
+	Embedding            string         `thrift:"embedding,5" frugal:"5,default,string" json:"embedding"`
+	EmbeddingUpdatedTime int64          `thrift:"embedding_updated_time,6" frugal:"6,default,i64" json:"embedding_updated_time"`
 }
 
 func NewTeamInfo() *TeamInfo {
@@ -1515,6 +1517,14 @@ func (p *TeamInfo) GetTeamSkills() (v []*TeamSkill) {
 func (p *TeamInfo) GetMembers() (v []*MemberInfo) {
 	return p.Members
 }
+
+func (p *TeamInfo) GetEmbedding() (v string) {
+	return p.Embedding
+}
+
+func (p *TeamInfo) GetEmbeddingUpdatedTime() (v int64) {
+	return p.EmbeddingUpdatedTime
+}
 func (p *TeamInfo) SetTeamBriefInfo(val *TeamBriefInfo) {
 	p.TeamBriefInfo = val
 }
@@ -1527,12 +1537,20 @@ func (p *TeamInfo) SetTeamSkills(val []*TeamSkill) {
 func (p *TeamInfo) SetMembers(val []*MemberInfo) {
 	p.Members = val
 }
+func (p *TeamInfo) SetEmbedding(val string) {
+	p.Embedding = val
+}
+func (p *TeamInfo) SetEmbeddingUpdatedTime(val int64) {
+	p.EmbeddingUpdatedTime = val
+}
 
 var fieldIDToName_TeamInfo = map[int16]string{
 	1: "team_brief_info",
 	2: "description",
 	3: "team_skills",
 	4: "members",
+	5: "embedding",
+	6: "embedding_updated_time",
 }
 
 func (p *TeamInfo) IsSetTeamBriefInfo() bool {
@@ -1591,6 +1609,26 @@ func (p *TeamInfo) Read(iprot thrift.TProtocol) (err error) {
 		case 4:
 			if fieldTypeId == thrift.LIST {
 				if err = p.ReadField4(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else {
+				if err = iprot.Skip(fieldTypeId); err != nil {
+					goto SkipFieldError
+				}
+			}
+		case 5:
+			if fieldTypeId == thrift.STRING {
+				if err = p.ReadField5(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else {
+				if err = iprot.Skip(fieldTypeId); err != nil {
+					goto SkipFieldError
+				}
+			}
+		case 6:
+			if fieldTypeId == thrift.I64 {
+				if err = p.ReadField6(iprot); err != nil {
 					goto ReadFieldError
 				}
 			} else {
@@ -1685,6 +1723,24 @@ func (p *TeamInfo) ReadField4(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *TeamInfo) ReadField5(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadString(); err != nil {
+		return err
+	} else {
+		p.Embedding = v
+	}
+	return nil
+}
+
+func (p *TeamInfo) ReadField6(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI64(); err != nil {
+		return err
+	} else {
+		p.EmbeddingUpdatedTime = v
+	}
+	return nil
+}
+
 func (p *TeamInfo) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("TeamInfo"); err != nil {
@@ -1705,6 +1761,14 @@ func (p *TeamInfo) Write(oprot thrift.TProtocol) (err error) {
 		}
 		if err = p.writeField4(oprot); err != nil {
 			fieldId = 4
+			goto WriteFieldError
+		}
+		if err = p.writeField5(oprot); err != nil {
+			fieldId = 5
+			goto WriteFieldError
+		}
+		if err = p.writeField6(oprot); err != nil {
+			fieldId = 6
 			goto WriteFieldError
 		}
 
@@ -1810,6 +1874,40 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 4 end error: ", p), err)
 }
 
+func (p *TeamInfo) writeField5(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("embedding", thrift.STRING, 5); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := oprot.WriteString(p.Embedding); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 5 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 5 end error: ", p), err)
+}
+
+func (p *TeamInfo) writeField6(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("embedding_updated_time", thrift.I64, 6); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := oprot.WriteI64(p.EmbeddingUpdatedTime); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 6 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 6 end error: ", p), err)
+}
+
 func (p *TeamInfo) String() string {
 	if p == nil {
 		return "<nil>"
@@ -1833,6 +1931,12 @@ func (p *TeamInfo) DeepEqual(ano *TeamInfo) bool {
 		return false
 	}
 	if !p.Field4DeepEqual(ano.Members) {
+		return false
+	}
+	if !p.Field5DeepEqual(ano.Embedding) {
+		return false
+	}
+	if !p.Field6DeepEqual(ano.EmbeddingUpdatedTime) {
 		return false
 	}
 	return true
@@ -1875,6 +1979,20 @@ func (p *TeamInfo) Field4DeepEqual(src []*MemberInfo) bool {
 		if !v.DeepEqual(_src) {
 			return false
 		}
+	}
+	return true
+}
+func (p *TeamInfo) Field5DeepEqual(src string) bool {
+
+	if strings.Compare(p.Embedding, src) != 0 {
+		return false
+	}
+	return true
+}
+func (p *TeamInfo) Field6DeepEqual(src int64) bool {
+
+	if p.EmbeddingUpdatedTime != src {
+		return false
 	}
 	return true
 }

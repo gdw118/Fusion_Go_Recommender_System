@@ -1,21 +1,28 @@
 package db
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/Yra-A/Fusion_Go/cmd/team/embedding"
 	"github.com/Yra-A/Fusion_Go/kitex_gen/team"
+	"github.com/Yra-A/Fusion_Go/pkg/configs/openai"
 	"github.com/Yra-A/Fusion_Go/pkg/errno"
 )
 
 type TeamInfo struct {
-	TeamID       int32     `gorm:"primary_key;column:team_id"`
-	ContestID    int32     `gorm:"column:contest_id"`
-	Title        string    `gorm:"column:title"`
-	Goal         string    `gorm:"column:goal"`
-	CurPeopleNum int32     `gorm:"column:cur_people_num"`
-	CreatedTime  time.Time `gorm:"column:created_time"`
-	LeaderID     int32     `gorm:"column:leader_id"`
-	Description  string    `gorm:"column:description"`
+	TeamID              int32     `gorm:"primary_key;column:team_id"`
+	ContestID           int32     `gorm:"column:contest_id"`
+	Title               string    `gorm:"column:title"`
+	Goal                string    `gorm:"column:goal"`
+	CurPeopleNum        int32     `gorm:"column:cur_people_num"`
+	CreatedTime         time.Time `gorm:"column:created_time"`
+	LeaderID            int32     `gorm:"column:leader_id"`
+	Description         string    `gorm:"column:description"`
+	Embedding           string    `gorm:"column:embedding;type:json"` // 存储为 JSON 字符串
+	EmbeddingUpdatedTime time.Time `gorm:"column:embedding_updated_time"`
 }
 
 func (TeamInfo) TableName() string {
@@ -56,6 +63,46 @@ type TeamUserRelationship struct {
 
 func (TeamUserRelationship) TableName() string {
 	return "team_user_relationship"
+}
+
+// TeamDB 实现TeamInfoProvider接口
+type TeamDB struct{}
+
+func NewTeamDB() *TeamDB {
+	return &TeamDB{}
+}
+
+// GetTeamInfo 实现TeamInfoProvider接口
+func (t *TeamDB) GetTeamInfo(teamID int32) (*team.TeamInfo, error) {
+	return QueryTeamInfo(teamID)
+}
+
+// GetContestTeamsWithEmbedding 实现TeamInfoProvider接口
+func (t *TeamDB) GetContestTeamsWithEmbedding(contestID int32) ([]*team.TeamInfo, error) {
+	return GetContestTeamsWithEmbedding(contestID)
+}
+
+// UpdateTeamEmbedding 实现TeamInfoProvider接口
+func (t *TeamDB) UpdateTeamEmbedding(teamID int32, embedding []float64, updatedTime time.Time) error {
+	fmt.Printf("开始更新数据库中的embedding，teamID: %d, embedding长度: %d\n", teamID, len(embedding))
+	
+	// 将 embedding 数组序列化为 JSON 字符串
+	embeddingJSON, err := json.Marshal(embedding)
+	if err != nil {
+		fmt.Printf("序列化 embedding 失败: %v\n", err)
+		return err
+	}
+	
+	if err := DB.Model(&TeamInfo{}).Where("team_id = ?", teamID).Updates(map[string]interface{}{
+		"embedding": string(embeddingJSON),
+		"embedding_updated_time": updatedTime,
+	}).Error; err != nil {
+		fmt.Printf("更新数据库失败: %v\n", err)
+		return err
+	}
+	
+	fmt.Printf("数据库更新成功\n")
+	return nil
 }
 
 // CreateTeamSkills 创建团队技能需求
@@ -102,6 +149,7 @@ func CreateTeam(user_id int32, contest_id int32, title string, goal string, desc
 		CreatedTime:  time.Now(),
 		LeaderID:     user_id,
 		Description:  description,
+		EmbeddingUpdatedTime: time.Now(), // 初始化 embedding 更新时间
 	}
 	if err := DB.Create(team).Error; err != nil {
 		return 0, err
@@ -118,6 +166,19 @@ func CreateTeam(user_id int32, contest_id int32, title string, goal string, desc
 	}
 	
 	TeamAddUser(teamInfo.TeamID, user_id)
+
+	// 生成并更新embedding
+	client, err := openai.NewClient()
+	if err != nil {
+		fmt.Printf("Warning: %v, skipping embedding generation for team %d\n", err, teamInfo.TeamID)
+		return teamInfo.TeamID, nil
+	}
+	embeddingService := embedding.NewService(context.Background(), NewTeamDB(), client)
+	if err := embeddingService.UpdateTeamEmbedding(teamInfo.TeamID); err != nil {
+		// 如果embedding生成失败，记录错误但不影响队伍创建
+		fmt.Printf("Failed to generate embedding for team %d: %v\n", teamInfo.TeamID, err)
+	}
+
 	return teamInfo.TeamID, nil
 }
 
@@ -139,6 +200,18 @@ func ModifyTeam(team_id int32, title string, goal string, description string, sk
 	// 创建新的技能需求
 	if err := CreateTeamSkills(team_id, skills); err != nil {
 		return err
+	}
+
+	// 更新embedding
+	client, err := openai.NewClient()
+	if err != nil {
+		fmt.Printf("Warning: %v, skipping embedding update for team %d\n", err, team_id)
+		return nil
+	}
+	embeddingService := embedding.NewService(context.Background(), NewTeamDB(), client)
+	if err := embeddingService.UpdateTeamEmbedding(team_id); err != nil {
+		// 如果embedding生成失败，记录错误但不影响队伍修改
+		fmt.Printf("Failed to update embedding for team %d: %v\n", team_id, err)
 	}
 
 	return nil
@@ -166,6 +239,7 @@ func QueryTeamList(contest_id int32) ([]*team.TeamBriefInfo, error) {
 	return teamBriefInfoList, nil
 }
 
+// QueryTeamInfo 查询队伍信息
 func QueryTeamInfo(team_id int32) (*team.TeamInfo, error) {
 	var teamInfo TeamInfo
 	if err := DB.Where("team_id = ?", team_id).First(&teamInfo).Error; err != nil {
@@ -296,4 +370,61 @@ func TeamManageAction(user_id int32, application_id int32, action_type int32) er
 		return err
 	}
 	return nil
+}
+
+// GetContestTeamsWithEmbedding 获取竞赛下的队伍及其 embedding
+func GetContestTeamsWithEmbedding(contestID int32) ([]*team.TeamInfo, error) {
+	var teamInfos []TeamInfo
+	if err := DB.Where("contest_id = ?", contestID).Find(&teamInfos).Error; err != nil {
+		return nil, err
+	}
+
+	var teams []*team.TeamInfo
+	for _, t := range teamInfos {
+		// 获取团队技能需求
+		teamSkills, err := GetTeamSkills(t.TeamID)
+		if err != nil {
+			return nil, err
+		}
+
+		// 获取团队成员
+		var teamUserRelationship []*TeamUserRelationship
+		if err := DB.Where("team_id = ?", t.TeamID).Find(&teamUserRelationship).Error; err != nil {
+			return nil, err
+		}
+		var memberList []*team.MemberInfo
+		for _, tur := range teamUserRelationship {
+			memberList = append(memberList, &team.MemberInfo{
+				UserId: tur.UserID,
+			})
+		}
+
+		// 解析 embedding
+		var embedding []float64
+		if t.Embedding != "" {
+			if err := json.Unmarshal([]byte(t.Embedding), &embedding); err != nil {
+				return nil, err
+			}
+		}
+
+		teams = append(teams, &team.TeamInfo{
+			TeamBriefInfo: &team.TeamBriefInfo{
+				TeamId:       t.TeamID,
+				Title:        t.Title,
+				Goal:         t.Goal,
+				CurPeopleNum: t.CurPeopleNum,
+				CreatedTime:  t.CreatedTime.Unix(),
+				ContestId:    t.ContestID,
+				LeaderInfo: &team.MemberInfo{
+					UserId: t.LeaderID,
+				},
+			},
+			Description: t.Description,
+			TeamSkills:  teamSkills,
+			Members:     memberList,
+			Embedding:   t.Embedding, // 直接使用原始的 JSON 字符串
+		})
+	}
+
+	return teams, nil
 }

@@ -63,7 +63,9 @@ CREATE TABLE `team_info` (
   `cur_people_num` INT COMMENT '当前队伍人数',
   `created_time` INT,
   `leader_id` INT,
-  `description` LONGTEXT
+  `description` LONGTEXT,
+  `embedding` JSON COMMENT '队伍信息的向量表示',
+  `embedding_updated_time` DATETIME COMMENT 'embedding更新时间'
 );
 
 CREATE TABLE `team_application` (

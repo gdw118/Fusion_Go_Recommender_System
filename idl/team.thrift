@@ -35,6 +35,8 @@ struct TeamInfo {
     2: string description,
     3: list<TeamSkill> team_skills,
     4: list<MemberInfo> members,
+    5: string embedding,
+    6: i64 embedding_updated_at
 }
 
 struct TeamApplication {
