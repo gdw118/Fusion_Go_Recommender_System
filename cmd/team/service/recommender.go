@@ -117,7 +117,7 @@ func (s *RecommenderService) RecommendTeams(ctx context.Context, userProfile *us
 
 	for _, team := range teams {
 		// 解析队伍的嵌入向量
-		var teamEmbedding []float64
+		var teamEmbedding db.TeamEmbedding
 		if err := json.Unmarshal([]byte(team.Embedding), &teamEmbedding); err != nil {
 			klog.CtxErrorf(ctx, "解析队伍embedding失败, teamID=%v: %v", team.TeamBriefInfo.TeamId, err)
 			// 将解析失败的队伍添加到失败列表
@@ -125,12 +125,23 @@ func (s *RecommenderService) RecommendTeams(ctx context.Context, userProfile *us
 			continue
 		}
 
-		// 计算余弦相似度
-		score := cosineSimilarity(userEmbedding, teamEmbedding)
+		// 计算用户与队伍中每个岗位的匹配度，取最大值
+		var maxScore float64
+		for _, position := range teamEmbedding.Positions {
+			score := db.CalculatePositionMatchScore(userEmbedding, position)
+			klog.CtxInfof(ctx, "队伍 %v 的岗位 %s 与用户的匹配度: %v", 
+				team.TeamBriefInfo.TeamId, position.Job, score)
+			if score > maxScore {
+				maxScore = score
+			}
+		}
+
+		// 应用时间衰减
 		timeBoost := calculateTimeBoost(team.TeamBriefInfo.CreatedTime)
-		score *= timeBoost
-		scores = append(scores, teamScore{team: team, score: score})
-		klog.CtxInfof(ctx, "队伍 %v 的推荐分数: %v (时间衰减: %v)", team.TeamBriefInfo.TeamId, score, timeBoost)
+		maxScore *= timeBoost
+
+		scores = append(scores, teamScore{team: team, score: maxScore})
+		klog.CtxInfof(ctx, "队伍 %v 的推荐分数: %v (时间衰减: %v)", team.TeamBriefInfo.TeamId, maxScore, timeBoost)
 	}
 
 	// 按相似度排序
@@ -155,32 +166,18 @@ func (s *RecommenderService) RecommendTeams(ctx context.Context, userProfile *us
 	return result, nil
 }
 
-// cosineSimilarity 计算余弦相似度
-func cosineSimilarity(a, b []float64) float64 {
-	if len(a) != len(b) {
-		return 0
-	}
-
-	var dotProduct, normA, normB float64
-	for i := 0; i < len(a); i++ {
-		dotProduct += a[i] * b[i]
-		normA += a[i] * a[i]
-		normB += b[i] * b[i]
-	}
-
-	if normA == 0 || normB == 0 {
-		return 0
-	}
-
-	return dotProduct / (math.Sqrt(normA) * math.Sqrt(normB))
-}
-
 // calculateTimeBoost 计算时间衰减
 func calculateTimeBoost(createdTime int64) float64 {
 	now := time.Now().Unix()
 	days := float64(now-createdTime) / (24 * 60 * 60)
 	
-	// 使用指数衰减函数，半衰期为7天
-	halfLife := 7.0
-	return math.Exp(-math.Ln2 * days / halfLife)
+	// 使用指数衰减函数，半衰期为30天，并设置最小衰减值为0.5
+	halfLife := 30.0
+	decay := math.Exp(-math.Ln2 * days / halfLife)
+	
+	// 设置最小衰减值
+	if decay < 0.5 {
+		return 0.5
+	}
+	return decay
 } 

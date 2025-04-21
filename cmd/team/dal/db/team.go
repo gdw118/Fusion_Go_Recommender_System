@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/Yra-A/Fusion_Go/cmd/team/embedding"
@@ -11,6 +12,17 @@ import (
 	"github.com/Yra-A/Fusion_Go/pkg/configs/openai"
 	"github.com/Yra-A/Fusion_Go/pkg/errno"
 )
+
+// PositionEmbedding 存储单个岗位的 embedding 信息
+type PositionEmbedding struct {
+	Job       string    `json:"job"`
+	Embedding []float64 `json:"embedding"`
+}
+
+// TeamEmbedding 存储整个队伍的 embedding 信息
+type TeamEmbedding struct {
+	Positions []PositionEmbedding `json:"positions"`
+}
 
 type TeamInfo struct {
 	TeamID              int32     `gorm:"primary_key;column:team_id"`
@@ -83,16 +95,67 @@ func (t *TeamDB) GetContestTeamsWithEmbedding(contestID int32) ([]*team.TeamInfo
 }
 
 // UpdateTeamEmbedding 实现TeamInfoProvider接口
-func (t *TeamDB) UpdateTeamEmbedding(teamID int32, embedding []float64, updatedTime time.Time) error {
-	fmt.Printf("开始更新数据库中的embedding，teamID: %d, embedding长度: %d\n", teamID, len(embedding))
+func (t *TeamDB) UpdateTeamEmbedding(teamID int32, _ []float64, updatedTime time.Time) error {
+	fmt.Printf("开始更新数据库中的embedding，teamID: %d\n", teamID)
 	
-	// 将 embedding 数组序列化为 JSON 字符串
-	embeddingJSON, err := json.Marshal(embedding)
+	// 获取队伍信息
+	var teamInfo TeamInfo
+	if err := DB.Where("team_id = ?", teamID).First(&teamInfo).Error; err != nil {
+		fmt.Printf("获取队伍信息失败: %v\n", err)
+		return err
+	}
+	
+	// 获取队伍的所有岗位信息
+	var teamSkills []*TeamSkills
+	if err := DB.Where("team_id = ?", teamID).Find(&teamSkills).Error; err != nil {
+		fmt.Printf("获取队伍技能信息失败: %v\n", err)
+		return err
+	}
+	
+	// 创建 embeddingService 实例
+	client, err := openai.NewClient()
+	if err != nil {
+		fmt.Printf("创建 OpenAI 客户端失败: %v\n", err)
+		return err
+	}
+	embeddingService := embedding.NewService(context.Background(), t, client)
+	
+	// 为每个岗位生成 embedding
+	var positionEmbeddings []PositionEmbedding
+	for _, skill := range teamSkills {
+		// 生成岗位的 embedding
+		positionEmbedding32, err := embeddingService.GeneratePositionEmbedding(
+			skill.Job, skill.Skill, skill.Category, teamInfo.Description, teamInfo.Goal)
+		if err != nil {
+			fmt.Printf("生成岗位 %s 的 embedding 失败: %v\n", skill.Job, err)
+			continue
+		}
+		
+		// 将 float32 转换为 float64
+		positionEmbedding64 := make([]float64, len(positionEmbedding32))
+		for i, v := range positionEmbedding32 {
+			positionEmbedding64[i] = float64(v)
+		}
+		
+		positionEmbeddings = append(positionEmbeddings, PositionEmbedding{
+			Job:       skill.Job,
+			Embedding: positionEmbedding64,
+		})
+	}
+	
+	// 构建 TeamEmbedding 结构
+	teamEmbedding := TeamEmbedding{
+		Positions: positionEmbeddings,
+	}
+	
+	// 序列化为 JSON
+	embeddingJSON, err := json.Marshal(teamEmbedding)
 	if err != nil {
 		fmt.Printf("序列化 embedding 失败: %v\n", err)
 		return err
 	}
 	
+	// 更新数据库
 	if err := DB.Model(&TeamInfo{}).Where("team_id = ?", teamID).Updates(map[string]interface{}{
 		"embedding": string(embeddingJSON),
 		"embedding_updated_time": updatedTime,
@@ -400,9 +463,9 @@ func GetContestTeamsWithEmbedding(contestID int32) ([]*team.TeamInfo, error) {
 		}
 
 		// 解析 embedding
-		var embedding []float64
+		var teamEmbedding TeamEmbedding
 		if t.Embedding != "" {
-			if err := json.Unmarshal([]byte(t.Embedding), &embedding); err != nil {
+			if err := json.Unmarshal([]byte(t.Embedding), &teamEmbedding); err != nil {
 				return nil, err
 			}
 		}
@@ -427,4 +490,25 @@ func GetContestTeamsWithEmbedding(contestID int32) ([]*team.TeamInfo, error) {
 	}
 
 	return teams, nil
+}
+
+// CalculatePositionMatchScore 计算用户与岗位的匹配度
+func CalculatePositionMatchScore(userEmbedding []float64, positionEmbedding PositionEmbedding) float64 {
+	if len(userEmbedding) == 0 || len(positionEmbedding.Embedding) == 0 {
+		return 0.0
+	}
+
+	// 计算余弦相似度
+	var dotProduct, userNorm, positionNorm float64
+	for i := 0; i < len(userEmbedding); i++ {
+		dotProduct += userEmbedding[i] * positionEmbedding.Embedding[i]
+		userNorm += userEmbedding[i] * userEmbedding[i]
+		positionNorm += positionEmbedding.Embedding[i] * positionEmbedding.Embedding[i]
+	}
+
+	if userNorm == 0 || positionNorm == 0 {
+		return 0.0
+	}
+
+	return dotProduct / (math.Sqrt(userNorm) * math.Sqrt(positionNorm))
 }
