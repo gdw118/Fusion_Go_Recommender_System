@@ -35,6 +35,8 @@ struct TeamInfo {
     2: string description,
     3: list<TeamSkill> team_skills,
     4: list<MemberInfo> members,
+    5: string embedding,
+    6: i64 embedding_updated_at
 }
 
 struct TeamApplication {
@@ -66,6 +68,7 @@ struct TeamListRequest {
     1: i32 contest_id,
     2: i32 limit,
     3: i32 offset,
+    4: i32 user_id,
 }
 
 struct TeamListResponse {

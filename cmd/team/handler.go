@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+
 	"github.com/Yra-A/Fusion_Go/cmd/team/service"
 	team "github.com/Yra-A/Fusion_Go/kitex_gen/team"
 	"github.com/Yra-A/Fusion_Go/pkg/errno"
@@ -31,7 +32,7 @@ func (s *TeamServiceImpl) TeamCreate(ctx context.Context, req *team.TeamCreateRe
 func (s *TeamServiceImpl) TeamList(ctx context.Context, req *team.TeamListRequest) (resp *team.TeamListResponse, err error) {
 	klog.CtxDebugf(ctx, "TeamList called")
 	resp = new(team.TeamListResponse)
-	teamList, total, err := service.NewTeamListService(ctx).TeamList(req.ContestId, req.Limit, req.Offset)
+	teamList, total, err := service.NewTeamListService(ctx).TeamList(req.ContestId, req.Limit, req.Offset, req.UserId)
 	if err != nil {
 		resp.StatusCode = errno.Fail.ErrCode
 		resp.StatusMsg = errno.Fail.ErrMsg

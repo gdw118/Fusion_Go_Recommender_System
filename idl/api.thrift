@@ -273,6 +273,7 @@ struct TeamListRequest {
     2: i32 contest_id (api.path="contest_id")
     3: i32 limit (api.query="limit")
     4: i32 offset (api.query="offset")
+    5: i32 user_id (api.query="user_id")
 }
 
 struct TeamListResponse {
